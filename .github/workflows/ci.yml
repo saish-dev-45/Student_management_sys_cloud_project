@@ -1,0 +1,29 @@
+
+name: Student Management System CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t student-backend:ci ./backend
+
+      - name: Build frontend image
+        run: docker build -t student-frontend:ci ./frontend
+
+      - name: Pull PostgreSQL image
+        run: docker pull postgres:16
