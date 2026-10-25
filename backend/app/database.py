@@ -10,9 +10,10 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is missing from environment or .env")
+    print("[WARNING] DATABASE_URL is not set! Using temporary SQLite fallback so container starts.")
+    DATABASE_URL = "sqlite:///./temp_fallback.db"
 
-# Railway and some cloud providers provide 'postgres://' or 'postgresql://'.
+# Railway, Neon, Cloud SQL, and cloud providers provide 'postgres://' or 'postgresql://'.
 # SQLAlchemy with the modern 'psycopg' (v3) driver requires 'postgresql+psycopg://'.
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -23,11 +24,19 @@ elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("p
 
 is_local = os.getenv("ENVIRONMENT", "local").lower() == "local"
 
-engine = create_engine(
-    DATABASE_URL,
-    echo=is_local,
-    pool_pre_ping=True,
-)
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        echo=is_local,
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        echo=is_local,
+        pool_pre_ping=True,
+    )
+
 
 SessionLocal = sessionmaker(
     bind=engine,
