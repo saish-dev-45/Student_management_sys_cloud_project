@@ -90,7 +90,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Student Management System API", lifespan=lifespan)
 
-is_prod = os.getenv("ENVIRONMENT", "local").lower() in ("production", "prod")
+is_local = os.getenv("ENVIRONMENT", "").lower() == "local"
 
 # Session middleware (inner)
 app.add_middleware(
@@ -98,9 +98,10 @@ app.add_middleware(
     secret_key=os.getenv("SESSION_SECRET", "dev-secret-change-me"),
     session_cookie="admin_session",
     max_age=86400,
-    same_site="none" if is_prod else "lax",
-    https_only=True if is_prod else False,
+    same_site="lax" if is_local else "none",
+    https_only=False if is_local else True,
 )
+
 
 # CORS middleware (outer, handles preflight requests)
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")

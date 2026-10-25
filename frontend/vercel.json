@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin/:match*",
+      "destination": "https://student-management-sys-cloud-project-git-881881475603.asia-south1.run.app/admin/:match*"
+    },
+    {
+      "source": "/teacher/:match*",
+      "destination": "https://student-management-sys-cloud-project-git-881881475603.asia-south1.run.app/teacher/:match*"
+    },
+    {
+      "source": "/student/:match*",
+      "destination": "https://student-management-sys-cloud-project-git-881881475603.asia-south1.run.app/student/:match*"
+    },
+    {
+      "source": "/api-root",
+      "destination": "https://student-management-sys-cloud-project-git-881881475603.asia-south1.run.app/api-root"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
