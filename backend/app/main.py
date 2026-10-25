@@ -89,14 +89,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Student Management System API", lifespan=lifespan)
 
+is_prod = os.getenv("ENVIRONMENT", "local").lower() in ("production", "prod")
+
 # Session middleware (inner)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "dev-secret-change-me"),
     session_cookie="admin_session",
     max_age=86400,
-    same_site="lax",
-    https_only=False,
+    same_site="none" if is_prod else "lax",
+    https_only=True if is_prod else False,
 )
 
 # CORS middleware (outer, handles preflight requests)
@@ -115,11 +117,13 @@ for origin in default_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.railway\.app|https://.*\.up\.railway\.app",
+    allow_origin_regex=r"https://.*\.run\.app|https://.*\.a\.run\.app|https://.*\.railway\.app|https://.*\.up\.railway\.app|https://.*\.vercel\.app|https://.*\.onrender\.com|https://.*\.hf\.space",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 
 
 app.include_router(auth_router)
