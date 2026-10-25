@@ -47,12 +47,13 @@ load_dotenv()
 
 
 def seed_initial_admin():
-    admin_user = os.getenv("ADMIN_USERNAME", "").strip()
-    admin_pass = os.getenv("ADMIN_PASSWORD", "").strip()
+    admin_user = os.getenv("ADMIN_USERNAME", "admin").strip()
+    admin_pass = os.getenv("ADMIN_PASSWORD", "admin").strip()
     admin_email = os.getenv("ADMIN_EMAIL", "admin@school.edu").strip()
 
     if not admin_user or not admin_pass:
         return
+
 
     db = SessionLocal()
     try:
@@ -153,3 +154,9 @@ def root():
 @app.get("/api-root")
 def api_root():
     return {"status": "ok"}
+
+@app.post("/admin/seed-default", tags=["Admin Login"])
+def seed_default_admin():
+    seed_initial_admin()
+    return {"message": "Admin account verified / created with username: admin"}
+
