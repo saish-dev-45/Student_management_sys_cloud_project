@@ -1,6 +1,9 @@
 // Thin client for the FastAPI backend (see backend/app/routes/auth.py)
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+
 async function request(url, options = {}) {
-  const res = await fetch(url, {
+  const targetUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
+  const res = await fetch(targetUrl, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...options,
@@ -18,6 +21,7 @@ async function request(url, options = {}) {
   }
   return data;
 }
+
 
 export const login = (username, password) =>
   request("/admin/login", {

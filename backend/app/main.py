@@ -1,11 +1,13 @@
 
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from database import Base, engine
+from database import Base, engine, SessionLocal
 from models.course import Course
 from models.users import User
 from models.student import Student
@@ -43,18 +45,82 @@ from routes.teacher_leaves import (
 
 load_dotenv()
 
-app = FastAPI(title="Student Management System API")
 
+def seed_initial_admin():
+    admin_user = os.getenv("ADMIN_USERNAME", "").strip()
+    admin_pass = os.getenv("ADMIN_PASSWORD", "").strip()
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@school.edu").strip()
+
+    if not admin_user or not admin_pass:
+        return
+
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.username == admin_user).first()
+        if not existing:
+            new_admin = User(
+                username=admin_user,
+                email=admin_email,
+                password=admin_pass,
+                role="admin",
+            )
+            db.add(new_admin)
+            db.commit()
+            print(f"[Seed] Created initial admin account '{admin_user}'.")
+        else:
+            print(f"[Seed] Admin account '{admin_user}' already exists.")
+    except Exception as e:
+        print(f"[Seed] Error seeding admin user: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure tables exist and seed initial admin on startup
+    try:
+        Base.metadata.create_all(bind=engine)
+        seed_initial_admin()
+    except Exception as e:
+        print(f"[Startup] Database setup warning: {e}")
+    yield
+
+
+app = FastAPI(title="Student Management System API", lifespan=lifespan)
+
+# Session middleware (inner)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "dev-secret-change-me"),
     session_cookie="admin_session",
-    max_age=3600,
+    max_age=86400,
     same_site="lax",
     https_only=False,
 )
 
-Base.metadata.create_all(bind=engine)
+# CORS middleware (outer, handles preflight requests)
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+default_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+for origin in default_origins:
+    if origin not in origins:
+        origins.append(origin)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.railway\.app|https://.*\.up\.railway\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 app.include_router(auth_router)
 app.include_router(students_router)

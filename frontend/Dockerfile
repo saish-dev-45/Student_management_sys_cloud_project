@@ -13,9 +13,14 @@ RUN npm run build
 # Stage 2: Serve the production build
 FROM nginx:alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV PORT=80
+ENV BACKEND_URL=http://backend:8000
+ENV NGINX_ENVSUBST_VARS='$PORT $BACKEND_URL'
+
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
+
